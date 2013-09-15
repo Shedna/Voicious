@@ -31,7 +31,7 @@ block content
                 | &nbsp;for an account
              div#signup.step
                 form(method='POST', action='/register')
-                  input(name='username', placeholder='Username', type='text', required)
+                  input(name='name', placeholder='Username', type='text', required)
                   div.error.left(for='username')
                     label
                       i.icon-remove
@@ -46,7 +46,12 @@ block content
                     label
                       i.icon-remove
                       | &nbsp;You need to enter a valid password
-                  button.btn-large.-middle.btn-start.btn-signup(type='submit') Sign Up
+                  input(name='passwordconfirm', placeholder='Confirm password', type='password', required)
+                  div.error.left(for='passwordconfirm')
+                    label
+                      i.icon-remove
+                      | &nbsp;Passwords doesn\'t match
+                  button.btn-large.-middle.btn-start.btn-signup(type='submit', formnovalidate) Sign Up
             a.benefits
                 i.icon-chevron-sign-right
                 | benefits of signing up (for free)
@@ -105,10 +110,11 @@ block content
                         button.btn-large.btn-start.btn-cancel(type='reset') cancel
             div#signinContainer.stepContainer
                 div#signinStep.step
+                  form(method='POST', action='/login')
                     div.description
                         i.icon-user
                         | Sign in
-                    input(name='username', placeholder='Username or Email address', type='text')
+                    input(name='name', placeholder='Username or Email address', type='text')
                     input(name='password', placeholder='Password', type='password')
                     a.forgot(href='#')
                         i.icon-question-sign
@@ -118,4 +124,4 @@ block content
                         label
                             i.icon-check-empty
                             | Remember me
-                    button.btn-large.btn-start.btn-signin sign in
+                    button.btn-large.btn-start.btn-signin(type='submit', formnovalidate) sign in
