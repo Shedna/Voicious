@@ -15,6 +15,7 @@ body {
   position: relative; }
 
 .signup {
+  width: 211px;
   position: absolute;
   top: 0;
   right: 0;
@@ -44,6 +45,12 @@ body {
     .signup a:active:not(.benefits) {
       box-shadow: 0 1px rgba(255, 255, 255, 0.04), inset 0 1px 4px rgba(0, 0, 0, 0.32);
       text-shadow: 0 -1px 1px rgba(0, 0, 0, 0.2); }
+    .signup div {
+	display: none;
+	margin-top: 10px; }
+    .signup div input {
+	width: 185px;
+	margin: 6px 0; }
   .signup .benefits {
     border-bottom-right-radius: 12px;
     border-bottom-left-radius: 12px;
@@ -211,6 +218,10 @@ input[type="text"], input[type="password"] {
   font-family: "PT Sans", "Helvetica", sans-serif;
   font-size: .8em;
   text-align: left; }
+  .error.left, .success.left, .info.left {
+      margin: 0;
+      right: 165px;
+      top: 4px; }
   .error i, .success i, .info i {
     font-size: 1.4em;
     margin-right: 6px; }
@@ -255,6 +266,8 @@ button {
   width: 250px;
   height: 42px;
   font-size: .9em; }
+  .-middle {
+      width: 185px; }
 
 .btn-quick {
   background: #262c32;
@@ -292,7 +305,14 @@ button {
   .btn-create:active {
     background: #57aa25; }
 
-.btn-join, .btn-sigin {
+.btn-signup {
+  background: #ebd61f; }
+  .btn-signup:hover {
+      background: #ecdb42; }
+  .btn-signup:active {
+      background: #ebd300; }
+
+.btn-join, .btn-signin {
   background: #2194ff; }
   .btn-join:hover, .btn-sigin:hover {
     background: #40a3ff; }
