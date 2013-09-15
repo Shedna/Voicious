@@ -46,7 +46,7 @@ class _Config
         @Database.Name      = "voicious"          if not @Database.Name?
         @Database.Connector = "mongodb"           if not @Database.Connector?
         @Database.Sessions  = 'mongo'             if @Database.Sessions is 'mongodb'
-        @Database.Hostname  = DefaultHostname @Database.Hostname
+        @Database.Hostname  = 'localhost'         if not @Database.Hostname
 
     # Initialize the WebSocket server config with basic value if configuration file doesn't
     # contain the required informations.
@@ -76,6 +76,9 @@ class _Config
 
     constructor : () ->
         @Paths  = {}
+        @Database = {}
+        @Voicious = {}
+        @Websocket = {}
         @Paths.Root             = Path.join __dirname, '..', '..'
         @Paths.Config           = Path.join @Paths.Root, 'etc'
         @Paths.Webroot          = Path.join @Paths.Root, 'www'
