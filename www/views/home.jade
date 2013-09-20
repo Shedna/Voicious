@@ -6,14 +6,11 @@ block style
 
 block scripts
     script(type='text/javascript', src='/public/js/home.js')
-    script(type='text/javascript')
-        if ('#{hash}' !== '') {
-            window.location.hash    = '#{hash}';
-        }
-
-    if locals.erroron
+    if locals.pageConfig
         script(type='text/javascript')
-            this.erroron    = JSON.parse('!{erroron}');
+            if ('#{pageConfig.hash}' !== '') {
+                window.location.hash    = '#{pageConfig.hash}';
+            }
 
     if locals.roomid
         script(type='text/javascript')
@@ -29,8 +26,8 @@ block content
                 i.icon-edit
                 strong SIGN UP
                 | &nbsp;for an account
-             div#signup.step
-                form(method='POST', action='/register')
+             div#signup.step.stepContainer
+                form(method='POST', action='/register', name='signup')
                   input(name='name', placeholder='Username', type='text', required)
                   div.error.left(for='username')
                     label
@@ -75,7 +72,7 @@ block content
                         strong join
                         | &nbsp;existing room
                 div#quickCreate.step
-                    form(method='POST', action='/quicklogin')
+                    form(method='POST', action='/quicklogin', name='quicklogin')
                         div.description
                             i.icon-asterisk
                             | Create a new Room
@@ -87,7 +84,7 @@ block content
                         button.btn-large.btn-start.btn-create(type='submit', formnovalidate) create
                         button.btn-large.btn-start.btn-cancel(type='reset') cancel
                 div#quickJoin.step
-                    form(method='POST', action='/quickJoin')
+                    form(method='POST', action='/quickJoin', name='quickjoin')
                         div.description
                             i.icon-chevron-right
                             | Join an existing Room
@@ -110,7 +107,7 @@ block content
                         button.btn-large.btn-start.btn-cancel(type='reset') cancel
             div#signinContainer.stepContainer
                 div#signinStep.step
-                  form(method='POST', action='/login')
+                  form(method='POST', action='/login', name='signin')
                     div.description
                         i.icon-user
                         | Sign in

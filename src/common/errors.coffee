@@ -56,7 +56,7 @@ class Errors
                 options.errorMsg  = "> Oops !<br />> Looks like the page you are looking for doesn't exist.<br />> Sorry."
         options.title = Config.Voicious.Title + " | " + options.status + " " + options.statusText
         options.year = do (new Date()).getFullYear
-        res.render 'error.jade', options
+        res.render 'error', options
 
     # Set the right message and render the internal error page.
     @RenderError : (req, res) ->
@@ -71,7 +71,13 @@ class Errors
             options.errorMsg = "> Oops !<br />> Looks like something went wrong.<br />> Sorry."
         options.title = Config.Voicious.Title + " | " + options.status + " " + options.statusText
         options.year = do (new Date()).getFullYear
-        res.render 'error.jade', options
+        res.render 'error', options
 
+    @RenderPageOnError : (req, res, page, pageConfig, errors) ->
+        locals =
+            title   : Config.Voicious.Title
+            pageConfig : pageConfig
+            errors : errors
+        res.render page, locals
 
 exports.Errors  = Errors
