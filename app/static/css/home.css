@@ -46,17 +46,16 @@ body {
       box-shadow: 0 1px rgba(255, 255, 255, 0.04), inset 0 1px 4px rgba(0, 0, 0, 0.32);
       text-shadow: 0 -1px 1px rgba(0, 0, 0, 0.2); }
     .signup div {
-	display: none;
-	margin-top: 10px; }
+    display: none;
+    margin-top: 10px; }
     .signup div input {
-	width: 185px;
-	margin: 6px 0; }
+    width: 185px;
+    margin: 6px 0; }
   .signup .benefits {
     border-bottom-right-radius: 12px;
     border-bottom-left-radius: 12px;
     margin-top: 2px;
     border-color: #1d2124;
-    border-top-width: 0;
     color: #566774;
     font-family: "PT Sans", "Helvetica", sans-serif;
     font-size: .8em;
