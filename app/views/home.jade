@@ -35,25 +35,21 @@ block content
              div#signup.step.stepContainer
                 form(method='POST', action='/register', name='signup')
                   input(name='name', placeholder='Username', type='text', required)
-                  div.error.left(for='username')
-                    label
-                      i.icon-remove
-                      | &nbsp;Please choose a nickname
+                  div.error.left(for='name')
+                    i.icon-remove
+                    label &nbsp;Please choose a nickname
                   input(name='mail', placeholder='Email address', type='text', required)
                   div.error.left(for='mail')
-                    label
-                      i.icon-remove
-                      | &nbsp;Please choose a valid email address
+                    i.icon-remove
+                    label &nbsp;Please choose a valid email address
                   input(name='password', placeholder='Password', type='password', required)
                   div.error.left(for='password')
-                    label
-                      i.icon-remove
-                      | &nbsp;You need to enter a valid password
+                    i.icon-remove
+                    label &nbsp;You need to enter a valid password
                   input(name='passwordconfirm', placeholder='Confirm password', type='password', required)
                   div.error.left(for='passwordconfirm')
-                    label
-                      i.icon-remove
-                      | &nbsp;Passwords doesn\'t match
+                    i.icon-remove
+                    label &nbsp;Passwords are not matching
                   button.btn-large.-middle.btn-start.btn-signup(type='submit', formnovalidate) Sign Up
             a.benefits
                 i.icon-chevron-sign-right
@@ -77,48 +73,48 @@ block content
                         i.icon-chevron-right.icon-join
                         strong join
                         | &nbsp;existing room
-                div#quickCreate.step
+                div#quickCreate.step.movingStep
                     form(method='POST', action='/quicklogin', name='quicklogin')
                         div.description
                             i.icon-asterisk
                             | Create a new Room
                         input(name='name', placeholder='Nickname', type='text', required)
                         div.error(for='name')
-                            label
-                                i.icon-remove
-                                | &nbsp;Please choose a nickname
+                          i.icon-remove
+                          label &nbsp;Please choose a nickname
                         button.btn-large.btn-start.btn-create(type='submit', formnovalidate) create
                         button.btn-large.btn-start.btn-cancel(type='reset') cancel
-                div#quickJoin.step
+                div#quickJoin.step.movingStep
                     form(method='POST', action='/quickJoin', name='quickjoin')
                         div.description
-                            i.icon-chevron-right
-                            | Join an existing Room
+                          i.icon-chevron-right
+                          | Join an existing Room
                         input(name='room', placeholder='Room ID', type='text', required)
                         div.msg.success(for='room')
-                            label
-                                i.icon-ok
-                                strong Room ID
-                                | &nbsp;is OK
+                          i.icon-ok
+                          label
+                            strong Room ID
+                            | &nbsp;is OK
                         input(name='name', placeholder='Nickname', type='text', required)
-                        div.msg.info(for='name')
-                            label
-                                i.icon-hand-left
-                                | &nbsp;Choose a nickname, then you are good to join
                         div.error(for='name')
-                            label
-                                i.icon-remove
-                                | &nbsp;Please choose a nickname
+                          i.icon-remove
+                          label &nbsp;Please choose a nickname
                         button.btn-large.btn-start.btn-join(type='submit', formnovalidate) join
                         button.btn-large.btn-start.btn-cancel(type='reset') cancel
             div#signinContainer.stepContainer
-                div#signinStep.step
+                div#signinStep.step.movingStep
                   form(method='POST', action='/login', name='signin')
                     div.description
                         i.icon-user
                         | Sign in
-                    input(name='name', placeholder='Username or Email address', type='text')
-                    input(name='password', placeholder='Password', type='password')
+                    input(name='name', placeholder='Username or Email address', type='text', required)
+                    div.error(for='name')
+                      i.icon-remove
+                      label &nbsp;Enter a valid nickname or email address
+                    input(name='password', placeholder='Password', type='password', required)
+                    div.error(for='password')
+                      i.icon-remove
+                      label &nbsp;Do not forget your password !
                     a.forgot(href='#')
                         i.icon-question-sign
                         | I forgot my password

@@ -219,8 +219,8 @@ input[type="text"], input[type="password"] {
   text-align: left; }
   .error.left, .success.left, .info.left {
       margin: 0;
-      right: 165px;
-      top: 4px; }
+      right: 190px;
+      margin-top: 5px; }
   .error i, .success i, .info i {
     font-size: 1.4em;
     margin-right: 6px; }
