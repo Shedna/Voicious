@@ -18,6 +18,7 @@ block scripts
     !=js("/vendor/showdown/compressed/showdown.js")
     !=js("/vendor/zeroclipboard/ZeroClipboard.min.js")
     !=js("/vendor/object-watch/object-watch.js")
+    !=js('/vendor/shortcut.js/index.js')
     !=js("/scripts/modules/module.js")
     !=js('/scripts/connections.js')
     !=js('/scripts/commandManager.js')
@@ -56,6 +57,13 @@ block content
               i.icon-microphone.dark-grey
               span OFF
           div#sidebarAcc
+          div#shortcuts
+            p.shortcut
+              span.legend Hide sidebar
+              |: ctrl+shift+h
+            p.shortcut
+              span.legend Diaporama
+              |: ctrl+shift+m
         div#container.fill-height.color-two
           ul#feeds.fill-height(data-step='2', data-intro='#{trans.feedsTuto}', data-position='right')
           div#modArea.frame.fill-width
