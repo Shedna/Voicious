@@ -1,9 +1,8 @@
-#textChat.module.fill-height.color-one
+#textChat.module.fill-height.color-one(name="textChat", data-name="Chat", data-icon="comment")
     .frame
         #chatContent
             ul
         #chatForm
             form
-                span#descriptionTC
-                    | press ENTER to post
+                span#descriptionTC= t('app.textChat.DescriptionTC')
                 textarea

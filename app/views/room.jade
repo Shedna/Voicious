@@ -18,6 +18,9 @@ block scripts
     !=js("/vendor/showdown/compressed/showdown.js")
     !=js("/vendor/zeroclipboard/ZeroClipboard.min.js")
     !=js("/vendor/object-watch/object-watch.js")
+    !=js("/vendor/peerjs/dist/peer.min.js")
+    !=js("/vendor/socket.io-client/dist/socket.io.min.js")
+    !=js('/vendor/shortcut.js/index.js')
     !=js("/scripts/modules/module.js")
     !=js('/scripts/connections.js')
     !=js('/scripts/commandManager.js')
@@ -27,19 +30,17 @@ block scripts
         window.Voicious.currentUser = {
             uid  : "#{uid}",
         };
-        if ("#{wsHost}" !== "" && "#{wsPort}" !== "") {
-            window.ws          = {
-                Host : "#{wsHost}",
-                Port : parseInt("#{wsPort}")
-            };
+        if ("#{pjsHost}" !== "" && "#{pjsPort}" !== "") {
+          window.pjs          = {
+              Host : "#{pjsHost}",
+              Port : parseInt("#{pjsPort}")
+          };
+        }
         if ('!{modules}' != "") {
           window.modules = JSON.parse('!{modules}');
-          };
         }
     !=js("/scripts/room.js")
     script(type="text/javascript", src="http://platform.twitter.com/widgets.js")
-    for af in audioFiles
-      audio(src="/sounds/notification/" + af, name=af)
 block content
   div.container-fluid.fill-height
     div.row-fluid.fill-height
@@ -47,8 +48,8 @@ block content
           img#logo.center(src='/img/logo.png')
           div#userInfoCtn
             p#login(align="right") #{login}
-            p#acl(align="right") #{trans.user}
-          div#onOffCtn(data-step='0', data-intro='#{trans.mediaTuto}', data-position='right')
+            p#acl(align="right")= t('app.Room.User')
+          div#onOffCtn(data-step='0', data-intro= t('app.Tutorial.Media'), data-position='right')
             button#cam.activable.red.color-one.bordered.shadowed
               i.icon-facetime-video.dark-grey
               span OFF
@@ -56,6 +57,15 @@ block content
               i.icon-microphone.dark-grey
               span OFF
           div#sidebarAcc
+          div#shortcuts
+            p.shortcut
+              span.legend Hide sidebar
+              |: ctrl+shift+h
+            p.shortcut
+              span.legend Diaporama
+              |: ctrl+shift+m
         div#container.fill-height.color-two
-          ul#feeds.fill-height(data-step='2', data-intro='#{trans.feedsTuto}', data-position='right')
+          ul#feeds.fill-height(data-step='2', data-intro= t('app.Tutorial.Feeds'), data-position='right')
           div#modArea.frame.fill-width
+  for af in audioFiles
+    audio(src="/sounds/notification/" + af, name=af)

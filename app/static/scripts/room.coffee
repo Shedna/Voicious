@@ -25,8 +25,8 @@ class Room
         @moduleArray = new Array
         @_jqModArea = $ '#modArea'
 
-        if window.ws? and window.ws.Host? and window.ws.Port?
-            @connections    = new Voicious.Connections @emitter, @uid, @rid, { host : window.ws.Host, port : window.ws.Port }
+        if window.pjs? and window.pjs.Host? and window.pjs.Port?
+            @connections    = new Voicious.Connections @emitter, @uid, @rid, { host : window.pjs.Host, port : window.pjs.Port }
             @commandManager = new CommandManager @emitter
             @buttonManager  = new Voicious.ButtonManager @emitter
             @notificationManager = new Voicious.NotificationManager @emitter
@@ -38,6 +38,7 @@ class Room
             callback : @quit
             infos : "usage: /quit [reason]"
         @emitter.trigger 'cmd.register', quit
+        do @sidebarShortcut
         $('#reportBug').click @bugReport
 
     activateCam         : () =>
@@ -57,7 +58,7 @@ class Room
         do ($ '#feeds > li:first > video:first').remove
         do @connections.modifyStream
 
-     refreshOnOff : (btn, val) =>
+    refreshOnOff : (btn, val) =>
         label = btn.find 'span'
         icon  = btn.find 'i'
         text = (do label.text)
@@ -66,6 +67,12 @@ class Room
             btn.toggleClass 'green red'
             icon.toggleClass 'dark-grey white'
             label.text (if (do label.text) is 'OFF' then 'ON' else 'OFF')
+
+    setOnLoadThumbnail  : () =>
+        @emitter.on 'peer.setonload', (event, id) ->
+            ($ "li#video_#{id}").append ($ "<i class='icon-spinner icon-spin icon-large'></i>")
+        @emitter.on 'peer.unsetonload', (event, id) ->
+            do ($ "li#video_#{id} i.icon-spinner").remove
 
     setOnOff            : () =>
         ($ '#cam').click @activateCam
@@ -123,9 +130,9 @@ class Room
                     (do (f.find 'textarea').first).val ''
                     ((f.parents '.popover').prev 'li').popover 'hide'
             $.ajax options
-        form = @doForm '/shareroom', 'E-mail addresses (comma separated):', 'Share', cb
+        form = @doForm '/shareroom', $.t("app.Room.ShareMail.FormRule"), $.t("app.Room.ShareMail.FormButton"), cb
         {
-            title : "Share this room by email"
+            title : $.t("app.Room.ShareMail.FormTitle")
             html : yes
             content : form
         }
@@ -145,23 +152,23 @@ class Room
                     ($ '#btn_report_a_bug').popover 'hide'
             $.ajax options
         {
-            title : 'Report a bug'
+            title : $.t("app.Room.ReportBug.FormTitle")
             html : yes
-            content : @doForm '/report', 'Explain the bug:', 'Report', cb
+            content : @doForm '/report', $.t("app.Room.ReportBug.FormRule"), $.t("app.Room.ReportBug.FormButton"), cb
             container : 'body'
         }
 
     setPage             : () ->
         @emitter.trigger 'button.create', {
-            name  : 'Share Room ID'
+            name  : $.t("app.Room.SetPage.ShareName")
             icon  : 'share-alt'
             attrs :
                 'data-step'     : 1
-                'data-intro'    : 'Click here if you want to share the room.'
+                'data-intro'    : $.t("app.Tutorial.ShareRoom")
                 'data-position' : 'right'
         }
         @emitter.trigger 'button.create', {
-            name     : 'Copy to clipboard'
+            name     : $.t("app.Room.SetPage.ClipboardName")
             icon     : 'copy'
             outer    : 'Share Room ID'
             attrs    :
@@ -173,36 +180,41 @@ class Room
                 }
                 clip.on 'complete', () =>
                     @emitter.trigger 'notif.text.ok',
-                        text : 'Link copied to clipboard'
+                        text : $.t("app.Room.SetPage.ClipboardCopied")
         }
         @emitter.trigger 'button.create', {
-            name : 'Share by email'
+            name : $.t("app.Room.SetPage.ShareMailName")
             icon : 'envelope'
             outer : 'share room id'
             click : {popover : do @sendByMail}
         }
         @emitter.trigger 'button.create', {
-            name  : 'Share on Twitter'
+            name  : $.t("app.Room.SetPage.ShareTwitterName")
             icon  : 'twitter'
             outer : 'share room id'
             click : () =>
-                text = encodeURI "Join me on @voiciousapp: "
+                text = encodeURI $.t("app.Room.SetPage.ShareTwitterText")
                 url  = "http://twitter.com/share?text=" + text + "&url=" + window.location.href + "&related=voiciousapp"
                 window.open url, '', 'left=500,top=200,width=600,height=600'
         }
         @emitter.trigger 'button.create', {
-            name  : 'Share on Facebook'
+            name  : $.t("app.Room.SetPage.ShareFacebookName")
             icon  : 'facebook-sign'
             outer : 'share_room_id'
             click : () =>
                 window.open "https://www.facebook.com/sharer/sharer.php?u=" + window.location.href, '', 'left=500,top=200,width=600,height=600'
         }
         @emitter.trigger 'button.create', {
-            name  : 'Report a bug'
+            name  : 'Modules'
+            icon  : 'th'
+        }
+        @emitter.trigger 'button.create', {
+            name  : $.t("app.Room.SetPage.ReportBugName")
             icon  : 'ambulance'
             click : {popover : do @reportBug}
         }
         do @setOnOff
+        do @setOnLoadThumbnail
         do @setClipboard
 
     resizableMod        : () =>
@@ -229,29 +241,41 @@ class Room
             }
 
     sortableMod         : () =>
-        $('#modArea').sortable({
+        lastModId = undefined
+        $('#modArea').sortable {
             containment: '#container',
             tolerance: 'pointer',
+            cancel: "input,textarea,button,select,option,p",
             receive: (event, ui) ->
                 $('.module').each () ->
                     pos = { t: (do $(this).offset).top, l: (do $(this).offset).left, h: do $(this).height, w: do $(this).width, docH: do $(window).height, docW: do $(window).width }
                     visible = (pos.t > 0 && pos.l > 0 && pos.t + pos.h < pos.docH && pos.l + pos.w < pos.docW)
                     if !visible
                         $(ui.sender).sortable 'cancel'
+            start: (event, ui) ->
+                lastModId = $('#modArea .module:last').attr 'id'
             sort: (event, ui) ->
                 $('.module').css 'clear', ''
             stop: (event, ui) ->
                 draggedItemId = '#' + ui.item.attr 'id'
-                prevHeight = do (do ui.item.prev).height
-                nextHeight = do (do ui.item.next).height
-                if ui.position.top >= prevHeight && ui.position.top >= nextHeight
-                    $(draggedItemId).css 'clear', 'left'
+                if ui.position.left < ui.originalPosition.left
+                    prevHeight = do (ui.item.prevAll '.module:first').height
+                    if prevHeight && ui.position.top >= prevHeight
+                        if lastModId
+                            ui.item.parent().append(ui.item)
+                        $(draggedItemId).css 'clear', 'left'
+                else if ui.position.left > ui.originalPosition.left
+                    nextHeight = do (ui.item.nextAll '.module:first').height
+                    if nextHeight && ui.position.top >= nextHeight
+                        if lastModId
+                            ui.item.parent().append(ui.item)
+                        $(draggedItemId).css 'clear', 'left'
                 else
                     $(draggedItemId).css 'clear', ''
                 if $('#mainCam').length
                     $('#mainCam').trigger 'resize'
-        }).disableSelection()
-    
+        }
+
     dynamicMod          : () =>
         do @resizableMod
         do @sortableMod
@@ -263,6 +287,18 @@ class Room
             url     : "/modules/#{moduleName}"
             success : (data) =>
                 @_jqModArea.append data.html
+                elem = ($ '.module[name="' + moduleName + '"]')
+                if elem.length > 0
+                    @emitter.trigger 'button.create', {
+                    name   : elem.data('name')
+                    icon   : elem.data('icon')
+                    outer  : 'Modules'
+                    attrs  : {'class' : 'green'}
+                    click : () ->
+                        elem.toggleClass 'none'
+                        $(this).toggleClass 'green'
+                        $(this).toggleClass 'red'
+                    }
                 module    = do (moduleName.charAt 0).toUpperCase + moduleName.slice 1
                 theModule = (new window[module] @emitter)
                 @emitter.on 'module.initialize', theModule.initialize
@@ -291,6 +327,20 @@ class Room
         # duplicate with the first login/logout messages, so it is desactivated for the moment.
         # @emitter.trigger 'message.sendtoall', message
         window.location.replace '/'
+
+    sidebarShortcut     : () =>
+        shortcut.add 'Ctrl+Shift+H', () ->
+            sidebar = ($ '#sidebar')
+            hidden = sidebar.hasClass 'trans-hide-sidebar'
+            displayed = sidebar.hasClass 'trans-show-sidebar'
+            if not hidden and not displayed
+                sidebar.addClass 'trans-hide-sidebar'
+            else if displayed
+                sidebar.removeClass 'trans-show-sidebar'
+                sidebar.addClass 'trans-hide-sidebar'
+            else if hidden
+                sidebar.removeClass 'trans-hide-sidebar'
+                sidebar.addClass 'trans-show-sidebar'
 
 # When the document has been loaded it will check if all services are available and
 # launch it.

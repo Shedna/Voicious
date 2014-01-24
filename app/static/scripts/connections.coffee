@@ -18,141 +18,135 @@ program. If not, see <http://www.gnu.org/licenses/>.
 class Ws
     constructor : (@uid, @rid, @emitter) ->
 
-    dance : (ws) =>
-        @ws           = new WebSocket "ws://#{ws.host}:#{ws.port}"
-        @ws.onopen    = @onOpen
-        @ws.onmessage = @onMessage
+    dance : () =>
+        @ws = io.connect window.location.origin
+        window.w = @ws
+        @ws.once 'connect', @onOpen
+        @ws.on 'disconnect', @onDisconnect
+
+    onDisconnect : =>
+        @emitter.trigger 'offline'
+        do @ws.removeAllListeners
+        @ws.once 'connect', @onOpen
+        @ws.on 'disconnect', @onDisconnect
 
     send : (data) =>
-        @ws.send JSON.stringify data
+        @ws.emit 'message', data
 
     forward : (to, data) =>
-        @send { type : 'forward' , params : { to : to , data : data } }
+        @send
+            type : 'forward'
+            params :
+                to : to
+                data : data
 
     onOpen : () =>
-        auth =
-            type   : 'authenticate'
-            params :
-                rid : @rid
-                uid : @uid
-        @send auth
+        @emitter.trigger 'online'
+        @ws.emit 'authenticate',
+            rid : @rid
+            uid : @uid
+        @ws.once 'authenticated', (info) =>
+            @emitter.trigger 'authenticated', info
+            @ws.on 'message', @onMessage
 
     onMessage : (message) =>
-        message = JSON.parse message.data
         @emitter.trigger message.type, message.params
 
     close : () =>
         do @ws.close
 
-class PC
-    constructor : (@id, @ws, emitter, localStream) ->
-        iceServers         = { iceServers : [ { url : 'stun:23.21.150.121' } ] }
-        @constraints       =
-            mandatory :
-                OfferToReceiveAudio     : yes
-                OfferToReceiveVideo     : yes
-        @channels          = { }
+class PeerJs
+    constructor     : (@uid, @rid, @emitter) ->
 
-        @pc                = new window.RTCPeerConnection iceServers
-        @pc.onicecandidate = @onIceCandidate
-        @pc.onaddstream    = (event) =>
-            data =
-                video : createVideoTag event.stream
-                uid   : @id
-            emitter.trigger 'stream.create', data
-        @pc.onremovestream = (event) =>
-            emitter.trigger 'stream.remove', { id : @id }
-            streamID = event.stream.id # Get the old stream and
-            do ($ "[data-streamid=#{streamID}]").remove # remove it
-        @addStream localStream
+    dance           : (pjs) =>
+        @pjs    = new Peer @uid, { host: pjs.host, port: pjs.port }
+        @pjs.on 'connection', @onConnection
+        @pjs.on 'call', @onCall
 
-    close : () =>
-        do @pc.close
+    onConnection    : (conn) =>
+        @createDataConnection conn, () =>
+            @emitter.trigger 'peer.trycall', {uid: conn.peer}
 
-    addStream : (s) =>
-        if s?
-            @pc.addStream s
+    connect         : (uid) =>
+        conn = @pjs.connect uid
+        @createDataConnection conn
 
-    onIceCandidate : (event) =>
-        if event.candidate?
-            @ws.forward @id, { type : 'ice.candidate' , params : {
-                label     : event.candidate.sdpMLineIndex
-                id        : event.candidate.sdpMid
-                candidate : event.candidate.candidate
-            } }
+    createDataConnection    : (conn, onOpen) =>
+        dc = new DC conn, @emitter, onOpen
+        @emitter.trigger 'peer.setonload', do dc.peer
 
-    createDataChannel : (name) =>
-        @channels              = @pc.createDataChannel name, { }
+    onCall          : (call) =>
+        @createMediaConnection call
+        @emitter.trigger 'peer.oncall', { uid: call.peer }
 
-        @channels[name].onopen = () =>
+    call            : (uid, stream) =>
+        call = @pjs.call uid, stream
+        @createMediaConnection call
 
-    createOffer : () =>
-        @pc.createOffer (description) =>
-            @pc.setLocalDescription description, () =>
-                #if MOZILLA
-                #    sdp             = description.sdp.split "\r\n"
-                #    description.sdp = ''
-                #    for token in sdp
-                #        description.sdp += token + "\r\n"
-                #        if token[0] is 'm' and token[1] is '='
-                #            description.sdp += "a=crypto:1 AES_CM_128_HMAC_SHA1_80 inline:BAADBAADBAADBAADBAADBAADBAADBAADBAADBAAD\r\n"
-                @ws.forward @id, { type : 'pc.offer' , params : { description : description } }
-            , errorHandler
-        , errorHandler, @constraints
+    createMediaConnection   : (call) =>
+        mc = new MC call, @emitter
+        @emitter.trigger 'peer.mediaconnection', { mc: mc }
 
-    removeStream : (stream) =>
-        @pc.removeStream stream
+class DC
+    constructor : (@conn, @emitter, onOpen) ->
+        @conn.on 'open', () =>
+            @emitter.trigger 'peer.dataconnection', { dc: @ }
+            @emitter.trigger 'peer.unsetonload', @conn.peer
+            if onOpen?
+                do onOpen
+            else
+                do @onOpen
+        @conn.on 'data', @onData
+        @conn.on 'close', @onClose
+        @conn.on 'error', errorHandler
 
-    createAnswer : (offeredDescription) =>
-        @pc.setRemoteDescription offeredDescription, () =>
-            @pc.createAnswer (description) =>
-                @pc.setLocalDescription description, () =>
-                    @ws.forward @id, { type : 'pc.answer', params : { description : description } }
-                , errorHandler
-            , errorHandler, @constraints
-        , errorHandler
+    peer        : () =>
+        return @conn.peer
 
-    conclude : (answeredDescription) =>
-        @pc.setRemoteDescription answeredDescription
+    onOpen      : () =>
 
-    addIceCandidate : (label, id, candidate) =>
-        @pc.addIceCandidate new window.RTCIceCandidate {
-            sdpMLineIndex : label
-            candidate     : candidate
-        }
+    onData      : (data) =>
+        @emitter.trigger data.type, data.params
 
-class Peer
-    constructor : (ws, @id, @name, emitter, localStream = undefined) ->
-        @pc = new PC @id, ws, emitter, localStream
+    onClose     : () =>
 
-    setLocalStream : (localStream) =>
-        @pc.addStream localStream
+    send        : (type, data) =>
+        @conn.send { type: type, params: data }
 
-    rmLocalStream  : (localStream) =>
-        @pc.removeStream localStream
+    close       : () =>
+        do @conn.close
 
-    offerHandshake : () =>
-        do @pc.createOffer
+class MC
+    constructor : (@call, @emitter) ->
+        @call.on 'stream', @onStream
+        @call.on 'close', @onClose
+        @call.on 'error', errorHandler
 
-    answerHandshake : (offeredDescription) =>
-        if MOZILLA
-            @pc.createAnswer offeredDescription
-        else
-            @pc.createAnswer (new window.RTCSessionDescription offeredDescription)
+    peer        : () =>
+        return @call.peer
 
-    concludeHandshake : (answeredDescription) =>
-        if MOZILLA
-            @pc.conclude answeredDescription
-        else
-            @pc.conclude (new window.RTCSessionDescription answeredDescription)
+    onStream    : (stream) =>
+        that = @
+        data =
+            video   : createVideoTag stream
+            uid     : @call.peer
+        ($ data.video).bind "loadedmetadata", () ->
+            data.type = if @videoHeight is 0 and @videoWidth is 0 then 'audio' else 'video'
+            that.emitter.trigger 'stream.create', data
 
-    close : () =>
-        do @pc.close
+    answer   : (stream) =>
+        @call.answer stream
+
+    onClose     : () =>
+
+    close       : () =>
+        do @call.close
 
 class Connections
-    constructor : (@emitter, @uid, @rid, @wsPortal) ->
+    constructor : (@emitter, @uid, @rid, @pjsPortal) ->
         @peers       = { }
         @ws          = new Ws @uid, @rid, @emitter
+        @pjs         = new PeerJs @uid, @rid, @emitter
         @localStream = undefined
         @userMedia   =
             video : no
@@ -168,12 +162,9 @@ class Connections
 
     modifyStream : () =>
         if @localStream isnt undefined
+            for id of @peers
+                @send id, { type: 'stream.remove', params: { id: @localStream.id, uid: @uid } }
             do @localStream.stop
-            for id, peer of @peers
-                peer.rmLocalStream @localStream
-                do peer.offerHandshake
-                if @userMedia['video'] is no or @userMedia['audio'] is no
-                    @sendStreamState id
         @localStream = undefined # erase old stream
         if @userMedia['video'] is yes or @userMedia['audio'] is yes
             do @enableCamera
@@ -183,7 +174,9 @@ class Connections
         @emitter.trigger 'module.initialize', { }
 
     removePeer   : (peerId) =>
-        do @peers[peerId].close
+        do @peers[peerId].dc.close
+        if @peers[peerId].mc?
+            do @peers[peerId].mc.close
         @peers[peerId] = null
         delete @peers[peerId]
 
@@ -194,15 +187,27 @@ class Connections
         @userMedia['audio'] = !@userMedia['audio']
 
     dance : () =>
-        @ws.dance @wsPortal
+        do @ws.dance
+        @pjs.dance @pjsPortal
         @emitter.on 'peer.list', (event, data) =>
             for peer in data.peers
-                @peers[peer.id] = new Peer @ws, peer.id, peer.name, @emitter, @localStream
-                @sendStreamState peer.id
-                do @peers[peer.id].offerHandshake
-        @emitter.on 'peer.create', (event, data) =>
-            @peers[data.id] = new Peer @ws, data.id, data.name, @emitter, @localStream
-            @sendStreamState data.id
+                @pjs.connect peer.id
+        @emitter.on 'peer.dataconnection', (event, data) =>
+            uid = do data.dc.peer
+            if !@peers[uid]?
+                @peers[uid] = {}
+            @peers[uid].dc = data.dc
+        @emitter.on 'peer.mediaconnection', (event, data) =>
+            uid = do data.mc.peer
+            if !@peers[uid]?
+                @peers[uid] = {}
+            @peers[uid].mc = data.mc
+        @emitter.on 'peer.trycall', (event, data) =>
+            if @localStream?
+                @pjs.call data.uid, @localStream
+        @emitter.on 'peer.oncall', (event, data) =>
+            stream = @localstream
+            @peers[data.uid].mc.answer stream
         @emitter.on 'peer.remove', (event, data) =>
             if @peers[data.id]?
                 @removePeer data.id
@@ -216,17 +221,20 @@ class Connections
         @emitter.on 'ice.candidate', (event, data) =>
             if @peers[data.from]?
                 @peers[data.from].pc.addIceCandidate data.label, data.id, data.candidate
-        @emitter.on 'ping', (event, data) =>
-            @ws.send { type : 'pong' , params : { token : data.token } }
+
+    send      : (id, message) =>
+        if @peers[id].dc?
+            @peers[id].dc.send message.type, message.params
+        else
+            @ws.forward id, message
 
     sendToAll : (event, data) =>
-        message
         if data.type?
             message = data
         else
             message = { type : 'chat.message' , params : { message : data } }
-        for id of @peers
-            @ws.forward id, message
+        for id, peer of @peers
+            @send id, message
 
     sendToOneName : (event, msg) =>
         message = { type : msg.type, params : msg.params }
@@ -234,14 +242,11 @@ class Connections
         if userId is undefined
             @emitter.trigger 'chat.message', { text : 'kick: ' + msg.to + ' isn\'t in this room.' }
         else
-            @ws.forward userId, message
+            @send userId, message
 
     sendToOneId : (event, msg) =>
         message = { type : msg.type, params : msg.params }
-        @ws.forward msg.to, message
-
-    sendStreamState : (id) =>
-        @ws.forward id, { type : 'stream.state', params : { streamState : @userMedia } }
+        @send msg.to, message
 
     enableCamera : () =>
         navigator.getUserMedia @userMedia, (stream) =>
@@ -250,15 +255,16 @@ class Connections
                 $('p#messageCam').addClass "hidden"
             @localStream = stream
             for id, peer of @peers
-                peer.setLocalStream @localStream
-                do peer.offerHandshake
-                @sendStreamState id
-            @emitter.trigger 'camera.localstream', (createVideoTag stream)
+                @pjs.call id, stream
+            data =
+                video: (createVideoTag stream)
+                type: if @userMedia.video is on then 'video' else 'audio'
+            @emitter.trigger 'camera.localstream', data
         , (error) =>
             do @toggleCamera if @userMedia.video
             do @toggleMicro if @userMedia.audio
             @emitter.trigger 'notif.text.ko',
-                text : "It seems that we can't access your hardware."
+                text : $.t("app.Connections.HardwareError")
             @emitter.trigger 'activable.unlock'
             if not MOZILLA and $('p#messageCam').hasClass "hidden"
                 $('p#messageCam').removeClass "hidden"

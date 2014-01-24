@@ -48,12 +48,13 @@ class _Config
         @Database.Sessions  = 'mongo'             if @Database.Sessions is 'mongodb'
         @Database.Hostname  = 'localhost'         if not @Database.Hostname
 
-    # Initialize the WebSocket server config with basic value if configuration file doesn't
+    # Initialize the Peerjs server config with basic value if configuration file doesn't
     # contain the required informations.
-    checkWebsocketConfig : () ->
-        @Websocket.Enabled  = 0           if not @Websocket.Enabled?
-        @Websocket.Hostname = DefaultHostname @Websocket.Hostname
-        @Websocket.Port     = 4243        if not @Websocket.Port?
+    checkPeerjsConfig : () ->
+        @Peerjs.Enabled  = 0           if not @Peerjs.Enabled?
+        @Peerjs.Hostname = DefaultHostname @Peerjs.Hostname
+        @Peerjs.Port     = 4244        if not @Peerjs.Port?
+        @Peerjs.Debug    = 0           if not @Peerjs.Debug?
 
     #
     checkSessionsConfig : () ->
@@ -71,7 +72,7 @@ class _Config
             @[key]  = val
         do @checkCoreConfig
         do @checkDatabaseConfig
-        do @checkWebsocketConfig
+        do @checkPeerjsConfig
         do @checkSessionsConfig
 
     constructor : () ->

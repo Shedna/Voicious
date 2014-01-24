@@ -15,23 +15,7 @@ program. If not, see <http://www.gnu.org/licenses/>.
 
 ###
 
-class Translator
-    constructor         : () ->
+Config = require '../common/config'
 
-    # Return the end of the host parameter.
-    # voicious.com -> com
-    getDomain           : (host) ->
-        location = undefined
-        if host isnt undefined
-            location = host.split '.'
-            location = location[location.length - 1]
-        return location
-
-    # Retrieve the corresponding translation depending on the end of the host parameter.
-    getTrans            : (host, view) ->
-        location = @getDomain host
-        if location is 'fr'
-            return (require "../trans/fr/#{view}").transDef
-        return (require "../trans/en/#{view}").transDef
-
-exports.Translator = new Translator
+PeerServer = require('peer').PeerServer
+server = new PeerServer { port: Config.Peerjs.Port, debug: Config.Peerjs.Debug }

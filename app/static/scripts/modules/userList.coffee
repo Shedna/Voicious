@@ -39,6 +39,9 @@ class UserList extends Module
         do @display
 
     configureEvents     : () =>
+        @emitter.on 'offline', =>
+            @users = []
+            do @display
         @emitter.on 'peer.list', @fill
         @emitter.on 'peer.create', (event, user) =>
             @update 'create', user
@@ -51,9 +54,13 @@ class UserList extends Module
             video.volume = @users[uid]['volume']
             ($ "li#video_#{uid}").append video
         @emitter.on 'stream.create', (event, data) =>
-            @toggleButtons data.uid, ['zoomBtn', 'muteBtn']
+            buttons = if data.type is 'video' then ['zoomBtn', 'muteBtn'] else ['muteBtn']
+            @users[data.uid].streamType = data.type
+            @toggleButtons data.uid, buttons
         @emitter.on 'stream.remove', (event, data) =>
-            @toggleButtons data.id, ['zoomBtn', 'muteBtn']
+            if @users[data.uid]?
+                buttons = if @users[data.uid].streamType is 'video' then ['zoomBtn', 'muteBtn'] else ['muteBtn']
+                @toggleButtons data.uid, buttons
         @emitter.on 'stream.zoom', (event, id) =>
             @zoomButton id
         @emitter.on 'user.kick', (event, data) =>
@@ -182,7 +189,7 @@ class UserList extends Module
 
     onKick          : (data) =>
         #document.cookie = 'connect.sid=; expires=Thu, 01-Jan-70 00:00:01 GMT;'
-        text    = "#{window.Voicious.currentUser.name} has been kicked out! (#{data.message})"
+        text    = "#{window.Voicious.currentUser.name}" + $.t('app.CommandManager.Kick')
         message =
             text : text
         @emitter.trigger 'message.sendtoall', message
